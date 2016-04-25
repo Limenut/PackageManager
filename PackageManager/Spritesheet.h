@@ -10,6 +10,7 @@ class Spritesheet
 public:
 	~Spritesheet();
 	void makeSheet(const string &_file, int _tileRes, Window *window);	//load image and chop it into tiles of requested size
+	SDL_Texture* nextFrameLoop();
 	SDL_Texture* nextFramePong();
 
 	vector<SDL_Texture*> frames;	//individual tiles/frames

@@ -71,6 +71,16 @@ void Entity::render(Window *window)
 	SDL_RenderCopyEx(window->ren, sprites->frames[sprites->currentFrame], NULL, &rc, angle, NULL, SDL_FLIP_NONE);
 }
 
+void Entity::animateLoop()
+{
+	if (counter) counter--;
+	else
+	{
+		counter = frameDelay;
+		sprites->nextFrameLoop();
+	}
+}
+
 void Entity::animatePong()
 {
 	if (counter) counter--;
@@ -99,4 +109,17 @@ void Entity::updateDirection()
 		direction = nextDirection;
 		nextDirection = NONE;
 	}	
+}
+
+void Entity::updateTile()
+{
+	tileX = x / sprites->tileRes;
+	tileY = y / sprites->tileRes;
+}
+
+bool Entity::checkAlignment()
+{
+	if (x % sprites->tileRes + y % sprites->tileRes == 0) return true;
+	else return false;
+	//else return chaotic evil
 }

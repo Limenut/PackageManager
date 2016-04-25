@@ -57,6 +57,17 @@ void Spritesheet::makeSheet(const string &_file, int _tileRes, Window *window)
 	cout << "Ok" << endl;
 }
 
+SDL_Texture* Spritesheet::nextFrameLoop()
+{
+	SDL_Texture* tex = frames[currentFrame];
+
+	currentFrame++;
+
+	if (currentFrame == frames.size()) currentFrame = 0;
+
+	return tex;
+}
+
 SDL_Texture* Spritesheet::nextFramePong()
 {
 	if (currentFrame == 0) forward = true;

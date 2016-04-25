@@ -1,6 +1,8 @@
 #pragma once
 
 #include <chrono>
+#include <ratio>
+#include <thread>
 
 using namespace std::chrono;
 

@@ -29,4 +29,5 @@ public:
 	void render(Window *window);
 	void update(Window *window);
 	void changeTile(unsigned x, unsigned y, char type, Window *window);
+	char getTile(unsigned x, unsigned y);
 };

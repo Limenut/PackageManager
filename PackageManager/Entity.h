@@ -21,12 +21,17 @@ public:
 	void move();
 	void move(int _x, int _y);
 	void render(Window *window);
+	void animateLoop();
 	void animatePong();
 	void requestDirection(Direction _direction);
 	void updateDirection();
+	void updateTile();
+	bool checkAlignment();
 
 	int x;
 	int y;
+	int tileX;
+	int tileY;
 	Spritesheet *sprites;
 	Direction direction;
 	Direction nextDirection;

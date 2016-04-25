@@ -153,3 +153,8 @@ void Tilemap::changeTile(unsigned x, unsigned y, char type, Window *window)
 	fullTex = tempTex;
 	SDL_SetRenderTarget(window->ren, NULL);
 }
+
+char Tilemap::getTile(unsigned x, unsigned y)
+{
+	return tiles[y*horiTiles + x];
+}

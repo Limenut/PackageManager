@@ -14,14 +14,14 @@
 
 const int SCREEN_WIDTH = 896;
 const int SCREEN_HEIGHT = 960;
+const int FPS = 120;
+const microseconds frameTime = microseconds(8333);
 
 Window mainWindow;
 Entity pacman;
 Tilemap gameMap;
 
 bool quit;
-
-using namespace std;
 
 bool init()
 {
@@ -100,7 +100,7 @@ bool testFile(const string &_file)
 	return infile.good();
 }
 
-bool checkDirection(Entity entity, const Tilemap& map, Direction direction)
+bool checkDirection(const Entity &entity, const Tilemap& map, Direction direction)
 {
 	unsigned x;
 	unsigned y;
@@ -137,6 +137,7 @@ bool checkDirection(Entity entity, const Tilemap& map, Direction direction)
 	x /= map.tileRes;
 	y /= map.tileRes;
 
+	if (x < 0 || y < 0) return false;
 	if (x >= map.horiTiles || y >= map.vertiTiles) return false;
 
 	switch (map.tiles[y*map.horiTiles + x])
@@ -188,6 +189,298 @@ void handleEvents()
 	}
 }
 
+void stupidChase(Entity& chaser, const Entity& target)
+{
+	Direction direction = NONE;
+	int xDelta = target.x - chaser.x;
+	int yDelta = target.y - chaser.y;
+
+
+	if (abs(xDelta) > abs(yDelta))
+	{
+		if (xDelta > 0)
+		{
+			if (checkDirection(chaser, gameMap, RIGHT))
+			{
+				direction = RIGHT;
+			}
+			else if (yDelta > 0)
+			{
+				if (checkDirection(chaser, gameMap, DOWN))
+				{
+					direction = DOWN;
+				}
+				else if (checkDirection(chaser, gameMap, UP))
+				{
+					direction = UP;
+				}
+				else direction = LEFT;
+			}
+			else
+			{
+				if (checkDirection(chaser, gameMap, UP))
+				{
+					direction = UP;
+				}
+				else if (checkDirection(chaser, gameMap, DOWN))
+				{
+					direction = DOWN;
+				}
+				else direction = LEFT;
+			}
+		}
+		else
+		{
+			if (checkDirection(chaser, gameMap, LEFT))
+			{
+				direction = LEFT;
+			}
+			else if (yDelta > 0)
+			{
+				if (checkDirection(chaser, gameMap, DOWN))
+				{
+					direction = DOWN;
+				}
+				else if (checkDirection(chaser, gameMap, UP))
+				{
+					direction = UP;
+				}
+				else direction = RIGHT;
+			}
+			else
+			{
+				if (checkDirection(chaser, gameMap, UP))
+				{
+					direction = UP;
+				}
+				else if (checkDirection(chaser, gameMap, DOWN))
+				{
+					direction = DOWN;
+				}
+				else direction = RIGHT;
+			}
+		}
+	}
+	else
+	{
+		if (yDelta > 0)
+		{
+			if (checkDirection(chaser, gameMap, DOWN))
+			{
+				direction = DOWN;
+			}
+			else if (xDelta > 0)
+			{
+				if (checkDirection(chaser, gameMap, RIGHT))
+				{
+					direction = RIGHT;
+				}
+				else if (checkDirection(chaser, gameMap, LEFT))
+				{
+					direction = LEFT;
+				}
+				else direction = UP;
+			}
+			else
+			{
+				if (checkDirection(chaser, gameMap, LEFT))
+				{
+					direction = LEFT;
+				}
+				else if (checkDirection(chaser, gameMap, RIGHT))
+				{
+					direction = RIGHT;
+				}
+				else direction = UP;
+			}
+		}
+		else
+		{
+			if (checkDirection(chaser, gameMap, UP))
+			{
+				direction = UP;
+			}
+			else if (xDelta > 0)
+			{
+				if (checkDirection(chaser, gameMap, RIGHT))
+				{
+					direction = RIGHT;
+				}
+				else if (checkDirection(chaser, gameMap, LEFT))
+				{
+					direction = LEFT;
+				}
+				else direction = DOWN;
+			}
+			else
+			{
+				if (checkDirection(chaser, gameMap, LEFT))
+				{
+					direction = LEFT;
+				}
+				else if (checkDirection(chaser, gameMap, RIGHT))
+				{
+					direction = RIGHT;
+				}
+				else direction = DOWN;
+			}
+		}
+	}
+	chaser.direction = direction;
+}
+
+
+
+Direction scanDirections(const Entity &entity, Tilemap& map)
+{
+	Direction directions = NONE;
+
+	int x;
+	int y;
+
+
+	x = entity.tileX - 1;
+	y = entity.tileY;
+	if (x < map.horiTiles && y < map.vertiTiles && x > 0 && y > 0) 
+	{
+		if (map.getTile(x,y) < 3)
+		{
+			directions = (Direction)(directions | LEFT);
+		}
+	}
+
+	x = entity.tileX + 1;
+	y = entity.tileY;
+	if (x < map.horiTiles && y < map.vertiTiles && x > 0 && y > 0)
+	{
+		if (map.getTile(x, y) < 3)
+		{
+			directions = (Direction)(directions | RIGHT);
+		}
+	}
+
+	x = entity.tileX;
+	y = entity.tileY - 1;
+	if (x < map.horiTiles && y < map.vertiTiles && x > 0 && y > 0)
+	{
+		if (map.getTile(x, y) < 3)
+		{
+			directions = (Direction)(directions | UP);
+		}
+	}
+
+	x = entity.tileX;
+	y = entity.tileY + 1;
+	if (x < map.horiTiles && y < map.vertiTiles && x > 0 && y > 0)
+	{
+		if (map.getTile(x, y) < 3)
+		{
+			directions = (Direction)(directions | DOWN);
+		}
+	}
+
+	return directions;
+}
+
+Direction simpleChase(const Entity& chaser, const Entity& target, Direction directions)
+{
+	int deltaX = target.x - chaser.x;
+	int deltaY = target.y - chaser.y;
+
+	if (directions & UP && directions & DOWN)		//pick best vertical direction
+	{ 
+		if (deltaY > 0) directions = Direction(directions & ~UP);
+		else directions = Direction(directions & ~DOWN);
+	}
+	if (directions & LEFT && directions & RIGHT)	//pic best horizontal direction
+	{
+		if (deltaX > 0) directions = Direction(directions & ~LEFT);
+		else directions = Direction(directions & ~RIGHT);
+	}
+
+	//1. return if direction is determined
+	if (directions == UP || directions == DOWN || directions == LEFT || directions == RIGHT) return directions;
+	
+	//2. check if one and only one direction is good
+	if (directions & DOWN && deltaY > 0 || directions & UP && deltaY <= 0)
+	{
+		if (directions & RIGHT && deltaX > 0 || directions & LEFT && deltaX <= 0)
+		{
+		}
+		else 
+		{ 
+			cout << "sdf";
+			return Direction(directions & (UP | DOWN)); 
+			
+		}
+	}
+	else
+	{
+		if (directions & RIGHT && deltaX > 0 || directions & LEFT && deltaX <= 0)
+		{	
+			return Direction(directions & (LEFT | RIGHT));
+		}
+		else 
+		{
+		}
+	}
+
+	
+	//3. choose the better direction based on distance
+	if (abs(deltaY) > abs(deltaX))
+	{
+		return Direction(directions & (LEFT | RIGHT));
+	}
+	else 
+	{ 
+		return Direction(directions & (UP | DOWN)); 
+	}
+}
+
+Direction randomChase(const Entity& chaser, const Entity& target, Direction directions)
+{
+
+	vector<Direction> choices;
+	if (directions & UP)	choices.push_back(UP);
+	if (directions & DOWN)	choices.push_back(DOWN);
+	if (directions & LEFT)	choices.push_back(LEFT);
+	if (directions & RIGHT)	choices.push_back(RIGHT);
+
+	if (choices.size() == 1) return choices.front();
+	else return choices[rand() % choices.size()];
+}
+
+void navigate(Entity& chaser, const Entity& target, Tilemap& map, Direction(*algorithm)(const Entity&, const Entity&, Direction))
+{
+	Direction directions = scanDirections(chaser, map);
+
+	//take opposite direction out, unless only option
+	Direction opposite = NONE;
+	if (chaser.direction)
+	{
+		switch (chaser.direction)
+		{
+		case UP:	opposite = DOWN;	break;
+		case DOWN:	opposite = UP;		break;
+		case LEFT:	opposite = RIGHT;	break;
+		case RIGHT:	opposite = LEFT;	break;
+		}
+
+		directions = (Direction)(directions & ~opposite);
+
+		if (directions == NONE) directions = opposite;
+	}
+	
+	switch (directions)
+	{
+	case UP:	chaser.direction = UP;		break;
+	case DOWN:	chaser.direction = DOWN;	break;
+	case LEFT:	chaser.direction = LEFT;	break;
+	case RIGHT:	chaser.direction = RIGHT;	break;
+	default: chaser.direction = algorithm(chaser, target, directions); break;
+	}
+}
+
 int main()
 {
 
@@ -203,7 +496,13 @@ int main()
 	}
 
 	Spritesheet pacSprite;
-	pacSprite.makeSheet("pacSprites12.png", 32, &mainWindow);
+	Spritesheet redSprite;
+	Spritesheet orangeSprite;
+	pacSprite.makeSheet("Pac8frame.png", 32, &mainWindow);
+	redSprite.makeSheet("ghost8.png", 32, &mainWindow);
+	orangeSprite.makeSheet("ghost8ora.png", 32, &mainWindow);
+
+	
 
 	Spritesheet levelSprites;
 	levelSprites.makeSheet("pacTiles.png", 32, &mainWindow);
@@ -212,46 +511,79 @@ int main()
 	gameMap.loadFile("pacMap.map");
 
 	gameMap.update(&mainWindow);
-	//gameMap.changeTile(5, 5, 3, &mainWindow);
 
 	pacman.sprites = &pacSprite;
-	pacman.frameDelay = 5;
-	pacman.speed = 1;
+	pacman.frameDelay = 1;
+	pacman.speed = 2;
 	pacman.direction = RIGHT;
 	pacman.move(32, 32);
 
+	Entity redGhost;
+	redGhost.sprites = &redSprite;
+	redGhost.frameDelay = 7;
+	redGhost.speed = 1;
+	redGhost.move(384, 416);
 
-	//timer.start(START_CYCLE_TIME);
+	Entity orangeGhost;
+	orangeGhost.sprites = &orangeSprite;
+	orangeGhost.frameDelay = 7;
+	orangeGhost.speed = 1;
+	orangeGhost.move(480, 416);
+
+	system_clock::time_point targetTime = system_clock::now();
 	while (!quit)
 	{
-		handleEvents();
-		if (checkAlignment(pacman, 32) && checkDirection(pacman, gameMap, pacman.nextDirection))
-		{
-			pacman.updateDirection();
-		}
 
-		//timer.startCycle();
+		handleEvents();
+		if (checkAlignment(pacman, 32))
+		{
+			pacman.updateTile();
+			if (checkDirection(pacman, gameMap, pacman.nextDirection))
+			{
+				pacman.updateDirection();
+			}
+			char tile = gameMap.getTile(pacman.tileX, pacman.tileY);
+			if (tile == 1 || tile == 2)
+			{
+				gameMap.changeTile(pacman.tileX, pacman.tileY, 0, &mainWindow);
+				gameMap.update(&mainWindow);
+			}
+		}
+		if (checkAlignment(redGhost, 32))
+		{
+			redGhost.updateTile();
+			//stupidChase(redGhost, pacman);
+			navigate(redGhost, pacman, gameMap, simpleChase);
+		}
+		if (checkAlignment(orangeGhost, 32))
+		{
+			orangeGhost.updateTile();
+			navigate(orangeGhost, pacman, gameMap, randomChase);
+		}
+		
 		SDL_SetRenderDrawColor(mainWindow.ren, 0, 0, 0, 255);
 		SDL_RenderFillRect(mainWindow.ren, NULL);
 
 		gameMap.render(&mainWindow);
 		pacman.render(&mainWindow);	
+		redGhost.render(&mainWindow);
+		orangeGhost.render(&mainWindow);
 
 		if (checkDirection(pacman, gameMap, pacman.direction)) 
 		{ 
 			pacman.move(); 
 			pacman.animatePong();
 		}
-		
+		redGhost.move();
+		redGhost.animateLoop();
+		orangeGhost.move();
+		orangeGhost.animateLoop();
 
 		SDL_RenderPresent(mainWindow.ren);
 
-		SDL_Delay(6);
-
-		/*if (timer.finish())
-		{
-			timer.reset();
-		}*/
+		targetTime += frameTime;
+		//targetTime += duration_cast<ratio<1, FPS>>;
+		std::this_thread::sleep_until(targetTime);
 	}
 
 	close();
