@@ -79,3 +79,9 @@ SDL_Texture* Spritesheet::nextFramePong()
 	SDL_Texture* tex = frames[currentFrame];
 	return tex;
 }
+
+SDL_Texture* Spritesheet::rotateFrameCW()
+{
+	SDL_Surface* target = SDL_CreateRGBSurface(0, tileRes, tileRes, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
+	return nullptr;
+}

@@ -46,12 +46,17 @@ void Entity::move(int _x, int _y)
 	y = _y;
 }
 
-void turn(Direction _direction)
+void Entity::render(Window *window)
 {
+	SDL_Rect rc;
+	rc.x = x;
+	rc.y = y;
+	rc.h = rc.w = sprites->tileRes;
 
+	SDL_RenderCopy(window->ren, sprites->frames[sprites->currentFrame], NULL, &rc);
 }
 
-void Entity::render(Window *window)
+void Entity::renderRotated(Window *window)
 {
 	SDL_Rect rc;
 	rc.x = x;

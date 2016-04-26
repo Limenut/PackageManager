@@ -12,6 +12,7 @@ public:
 	void makeSheet(const string &_file, int _tileRes, Window *window);	//load image and chop it into tiles of requested size
 	SDL_Texture* nextFrameLoop();
 	SDL_Texture* nextFramePong();
+	SDL_Texture* rotateFrameCW();
 
 	vector<SDL_Texture*> frames;	//individual tiles/frames
 	int tileRes;
