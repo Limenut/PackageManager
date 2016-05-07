@@ -25,6 +25,9 @@ Window mainWindow;
 Entity pacman;
 Tilemap gameMap;
 
+int blinkyX = 0;
+int blinkyY = 0;
+
 bool quit;
 
 bool init()
@@ -245,7 +248,7 @@ Direction scanDirections(const Entity &entity, Tilemap& map)
 	return directions;
 }
 
-Direction simpleChase2(const Entity& chaser, const Entity& target, Direction directions)
+Direction simpleChase2(const Ghost& chaser, const Entity& target, Direction directions)
 {
 	int deltaX = target.x - chaser.x;
 	int deltaY = target.y - chaser.y;
@@ -276,7 +279,7 @@ Direction simpleChase2(const Entity& chaser, const Entity& target, Direction dir
 	return NONE;
 }
 
-Direction simpleChaseRetreat(const Entity& chaser, const Entity& target, Direction directions)
+Direction simpleChaseRetreat(const Ghost& chaser, const Entity& target, Direction directions)
 {
 	int deltaX = target.x - chaser.x;
 	int deltaY = target.y - chaser.y;
@@ -288,14 +291,14 @@ Direction simpleChaseRetreat(const Entity& chaser, const Entity& target, Directi
 	else
 	{
 		Entity dummy;
-		dummy.x = 32;
-		dummy.y = 28 * 32;
+		dummy.x = chaser.homeX;
+		dummy.y = chaser.homeY;
 
 		return simpleChase2(chaser, dummy, directions);
 	}
 }
 
-Direction randomChase(const Entity& chaser, const Entity& target, Direction directions)
+Direction randomChase(const Ghost& chaser, const Entity& target, Direction directions)
 {
 
 	vector<Direction> choices;
@@ -308,7 +311,7 @@ Direction randomChase(const Entity& chaser, const Entity& target, Direction dire
 	else return choices[rand() % choices.size()];
 }
 
-Direction predictChase(const Entity& chaser, const Entity& target, Direction directions)
+Direction predictChase(const Ghost& chaser, const Entity& target, Direction directions)
 {
 	Entity dummy;
 	dummy.x = target.x;
@@ -326,7 +329,40 @@ Direction predictChase(const Entity& chaser, const Entity& target, Direction dir
 	return simpleChase2(chaser, dummy, directions);
 }
 
-void navigate(Entity& chaser, const Entity& target, Tilemap& map, Direction(*algorithm)(const Entity&, const Entity&, Direction))
+Direction weirdChase(const Ghost& chaser, const Entity& target, Direction directions)
+{
+	Entity dummy;
+	dummy.x = target.x;
+	dummy.y = target.y;
+
+	switch (target.direction)
+	{
+	case UP:	dummy.y -= 2 * 32; break;
+	case DOWN:	dummy.y += 2 * 32; break;
+	case LEFT:	dummy.x -= 2 * 32; break;
+	case RIGHT:	dummy.x += 2 * 32; break;
+	default:					   break;
+	}
+
+	//global -.-
+	int deltaX = target.x - blinkyX;
+	int deltaY = target.y - blinkyY;
+
+	dummy.x -= deltaX;
+	dummy.y -= deltaY;
+
+	return simpleChase2(chaser, dummy, directions);
+}
+
+Direction scatter(const Ghost& chaser, Direction directions)
+{
+	Entity dummy;
+	dummy.x = chaser.homeX;
+	dummy.y = chaser.homeY;
+	return simpleChase2(chaser, dummy, directions);
+}
+
+void navigate(Ghost& chaser, const Entity& target, Tilemap& map, Direction(*algorithm)(const Ghost&, const Entity&, Direction))
 {
 	Direction directions = scanDirections(chaser, map);
 
@@ -371,16 +407,20 @@ int main()
 		return 1;
 	}
 
+	srand((int)time(NULL));
+
+	unsigned dotsEaten = 0;
+
 	Spritesheet pacSprite;
 	Spritesheet redSprite;
 	Spritesheet cyanSprite;
 	Spritesheet pinkSprite;
 	Spritesheet orangeSprite;
 	pacSprite.makeSheet("Pac8frame.png", 32, &mainWindow);
-	redSprite.makeSheet("ghost8.png", 32, &mainWindow);
-	cyanSprite.makeSheet("ghost8cya.png", 32, &mainWindow);
-	pinkSprite.makeSheet("ghost8pin.png", 32, &mainWindow);
-	orangeSprite.makeSheet("ghost8ora.png", 32, &mainWindow);
+	redSprite.makeSheet("ghost8red_eyes.png", 32, &mainWindow);
+	cyanSprite.makeSheet("ghost8cya_eyes.png", 32, &mainWindow);
+	pinkSprite.makeSheet("ghost8pin_eyes.png", 32, &mainWindow);
+	orangeSprite.makeSheet("ghost8ora_eyes.png", 32, &mainWindow);
 
 	Spritesheet levelSprites;
 	levelSprites.makeSheet("pacTiles.png", 32, &mainWindow);
@@ -396,36 +436,47 @@ int main()
 	pacman.direction = RIGHT;
 	pacman.move(32, 32);
 
-	map<string, Entity> ghosts;
+	map<string, Ghost> ghosts;
 
-	ghosts["red"] = Entity();
+	ghosts["red"] = Ghost();
 	ghosts["red"].sprites = &redSprite;
 	ghosts["red"].move(384, 416);
+	ghosts["pink"].homeX = 800;
+	ghosts["pink"].homeY = -96;
 
-	ghosts["cyan"] = Entity();
+	ghosts["cyan"] = Ghost();
 	ghosts["cyan"].sprites = &cyanSprite;
 	ghosts["cyan"].move(416, 416);
+	ghosts["cyan"].homeX = 864;
+	ghosts["cyan"].homeY = 1024;
 
-	ghosts["pink"] = Entity();
+	ghosts["pink"] = Ghost();
 	ghosts["pink"].sprites = &pinkSprite;
 	ghosts["pink"].move(448, 416);
+	ghosts["pink"].homeX = 64;
+	ghosts["pink"].homeY = -96;
 
-	ghosts["orange"] = Entity();
+	ghosts["orange"] = Ghost();
 	ghosts["orange"].sprites = &orangeSprite;
 	ghosts["orange"].move(480, 416);
+	ghosts["orange"].homeX = 0;
+	ghosts["orange"].homeY = 1024;
 
 	for (auto &g : ghosts)
 	{
 		g.second.frameDelay = 7;
 		g.second.speed = 1;
+		g.second.isActive = false;
 	}
+	ghosts["red"].activate();
+	ghosts["pink"].activate();
 
 	system_clock::time_point targetTime = system_clock::now();
 	while (!quit)
 	{
 
 		handleEvents();
-		if (checkAlignment(pacman, 32))
+		if (pacman.checkAlignment())
 		{
 			pacman.updateTile();
 			if (pacman.nextDirection & scanDirections(pacman, gameMap))
@@ -433,34 +484,40 @@ int main()
 				pacman.updateDirection();
 			}
 			char tile = gameMap.getTile(pacman.tileX, pacman.tileY);
-			if (tile == 1 || tile == 2)
+			if (tile == 1 || tile == 2)	//eat
 			{
 				gameMap.changeTile(pacman.tileX, pacman.tileY, 0, &mainWindow);
 				gameMap.update(&mainWindow);
+				dotsEaten++;
+				if (!ghosts["cyan"].isActive && dotsEaten >= 30) ghosts["cyan"].activate();
+				else if (!ghosts["orange"].isActive && dotsEaten >= 80) ghosts["orange"].activate();
 			}
 		}
 		
-		if (checkAlignment(ghosts["red"], 32))
+		if (ghosts["red"].isActive && ghosts["red"].checkAlignment())
 		{
 			ghosts["red"].updateTile();
 			navigate(ghosts["red"], pacman, gameMap, simpleChase2);
 		}
-		if (checkAlignment(ghosts["cyan"], 32))
+		if (ghosts["cyan"].isActive && ghosts["cyan"].checkAlignment())
 		{
 			ghosts["cyan"].updateTile();
-			navigate(ghosts["cyan"], pacman, gameMap, randomChase);
+
+			blinkyX = ghosts["red"].x;
+			blinkyY = ghosts["red"].y;
+
+			navigate(ghosts["cyan"], pacman, gameMap, weirdChase);
 		}
-		if (checkAlignment(ghosts["pink"], 32))
+		if (ghosts["pink"].isActive && ghosts["pink"].checkAlignment())
 		{
 			ghosts["pink"].updateTile();
 			navigate(ghosts["pink"], pacman, gameMap, predictChase);
 		}
-		if (checkAlignment(ghosts["orange"], 32))
+		if (ghosts["orange"].isActive && ghosts["orange"].checkAlignment())
 		{
 			ghosts["orange"].updateTile();
 			navigate(ghosts["orange"], pacman, gameMap, simpleChaseRetreat);
 		}
-
 
 		SDL_SetRenderDrawColor(mainWindow.ren, 0, 0, 0, 255);
 		SDL_RenderFillRect(mainWindow.ren, NULL);
@@ -471,8 +528,8 @@ int main()
 		for (auto &g : ghosts)
 		{
 			g.second.render(&mainWindow);
-			g.second.move();
 			g.second.animateLoop();
+			if (g.second.isActive) g.second.move();		
 		}
 
 		SDL_RenderPresent(mainWindow.ren);

@@ -43,3 +43,16 @@ public:
 	unsigned frameDelay;	//frameDelay + 1 == for how many frames a single animation frame lasts for
 	unsigned counter;		//used for animation
 };
+
+class Ghost : public Entity
+{
+public:
+
+	bool isActive;
+	int homeX;
+	int homeY;
+	Direction(*algorithm)(const Entity&, Direction);
+
+	inline void activate() { isActive = true; }
+	inline void deActivate() { isActive = false; }
+};
