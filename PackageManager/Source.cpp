@@ -156,13 +156,6 @@ bool checkDirection(const Entity &entity, const Tilemap& map, Direction directio
 	}
 }
 
-bool checkAlignment(const Entity &entity, int tileRes)
-{
-	if (entity.x % tileRes + entity.y % tileRes == 0) return true;
-	else return false;
-	//else return chaotic evil
-}
-
 void handleEvents()
 {
 	SDL_Event e;
@@ -353,14 +346,6 @@ Direction weirdChase(const Ghost& chaser, const Entity& target, Direction direct
 	return simpleChase2(chaser, dummy, directions);
 }
 
-Direction scatter(const Ghost& chaser, Direction directions)
-{
-	Entity dummy;
-	dummy.x = chaser.homeX;
-	dummy.y = chaser.homeY;
-	return simpleChase2(chaser, dummy, directions);
-}
-
 void navigate(Ghost& chaser, const Entity& target, Tilemap& map, Direction(*algorithm)(const Ghost&, const Entity&, Direction))
 {
 	Direction directions = scanDirections(chaser, map);
@@ -482,7 +467,7 @@ int main()
 				gameMap.update(&mainWindow);
 				dotsEaten++;
 				if (!ghosts["cyan"].isActive && dotsEaten >= 30) ghosts["cyan"].activate();
-				else if (!ghosts["orange"].isActive && dotsEaten >= 80) ghosts["orange"].activate();
+				else if (!ghosts["orange"].isActive && dotsEaten >= 60) ghosts["orange"].activate();
 			}
 		}
 		
@@ -507,8 +492,13 @@ int main()
 		}
 		if (ghosts["orange"].isActive && ghosts["orange"].checkAlignment())
 		{
-			ghosts["orange"].updateTile();
-			navigate(ghosts["orange"], pacman, gameMap, simpleChaseRetreat);
+			ghosts["orange"].updateTile();	
+			//navigate(ghosts["orange"], pacman, gameMap, simpleChaseRetreat);
+			ghosts["orange"].distance(pacman) > 8 * 32 ?
+				ghosts["orange"].setTarget(pacman) : ghosts["orange"].setScatter();
+
+			ghosts["orange"].navigate(scanDirections(ghosts["orange"], gameMap));
+			
 		}
 
 		SDL_SetRenderDrawColor(mainWindow.ren, 0, 0, 0, 255);

@@ -11,6 +11,15 @@ enum Direction
 	RIGHT = 8
 };
 
+enum Chasemode
+{
+	INACTIVE,
+	CHASE,
+	SCATTER,
+	AFRAID,
+	HOME,
+};
+
 class Entity
 {
 public:
@@ -29,6 +38,7 @@ public:
 	void updateDirection();		//change to requested direction
 	void updateTile();			//update tileX and tileY
 	bool checkAlignment();		//perfect alignment with tile grid
+	int distance(Entity target);
 
 	//position in pixels
 	int x;
@@ -53,8 +63,16 @@ public:
 	bool isActive;
 	int homeX;
 	int homeY;
-	Direction(*algorithm)(const Entity&, Direction);
+	int targetX;
+	int targetY;
+	Chasemode mode;
+	//Direction(*chaseAlgorithm)(Direction);
 
 	inline void activate() { isActive = true; }
 	inline void deActivate() { isActive = false; }
+	void setTarget(Entity target);
+	void setScatter() { mode = SCATTER; }
+	void navigate(Direction directions);
+	Direction chase(int _x, int _y, Direction directions);
+	Direction flee(Direction directions);
 };

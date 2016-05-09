@@ -71,8 +71,8 @@ void Entity::renderRotated(Window *window)
 	switch (direction)
 	{
 	case RIGHT:	angle = 0;	break;
-	case DOWN: angle = 90;	break;
-	case LEFT: angle = 180;	break;
+	case DOWN: angle = 90; rc.x--;	break;
+	case LEFT: angle = 180; rc.y--;	break;
 	case UP: angle = 270;	break;
 	default: angle = 0; break;
 	}
@@ -138,4 +138,99 @@ bool Entity::checkAlignment()
 	if (x % sprites->tileRes + y % sprites->tileRes == 0) return true;
 	else return false;
 	//else return chaotic evil
+}
+
+int Entity::distance(Entity target)
+{
+	int deltaX = target.x - x;
+	int deltaY = target.y - y;
+
+	return int(sqrt(deltaX*deltaX + deltaY*deltaY) + 0.5);
+}
+
+void Ghost::setTarget(Entity target)
+{
+	targetX = target.x;
+	targetY = target.y;
+	mode = CHASE;
+}
+
+void Ghost::navigate(Direction directions)
+{
+	Direction opposite = NONE;
+	if (direction)
+	{
+		switch (direction)
+		{
+		case UP:	opposite = DOWN;	break;
+		case DOWN:	opposite = UP;		break;
+		case LEFT:	opposite = RIGHT;	break;
+		case RIGHT:	opposite = LEFT;	break;
+		}
+
+		directions = (Direction)(directions & ~opposite);
+
+		if (directions == NONE) directions = opposite;
+	}
+
+	switch (directions)
+	{
+	case UP:	direction = UP;		return;
+	case DOWN:	direction = DOWN;	return;
+	case LEFT:	direction = LEFT;	return;
+	case RIGHT:	direction = RIGHT;	return;
+	default: break;
+	}
+
+	switch (mode)
+	{
+	case INACTIVE:														break;
+	case CHASE:		direction = chase(targetX, targetY, directions);	break;
+	case SCATTER:	direction = chase(homeX, homeY, directions);		break;
+	case AFRAID:	direction = flee(directions);						break;
+	case HOME:															break;
+	}
+}
+
+Direction Ghost::chase(int _x, int _y, Direction directions)
+{
+	int deltaX = _x - x;
+	int deltaY = _y - y;
+
+	vector<Direction> choices;
+	choices.push_back(RIGHT);
+	choices.push_back(DOWN);
+	choices.push_back(LEFT);
+	choices.push_back(UP);
+
+	//arrange directions from best to worst
+	if (deltaX < 0)
+		swap(choices[0], choices[2]);
+	if (deltaY < 0)
+		swap(choices[1], choices[3]);
+	if (abs(deltaX) < abs(deltaY))
+	{
+		swap(choices[0], choices[1]);
+		swap(choices[2], choices[3]);
+	}
+
+	//pick best one available
+	for (auto &i : choices)
+	{
+		if (i & directions) return i;
+	}
+	cout << "error" << endl;
+	return NONE;
+}
+
+Direction Ghost::flee(Direction directions)
+{
+	vector<Direction> choices;
+	if (directions & UP)	choices.push_back(UP);
+	if (directions & DOWN)	choices.push_back(DOWN);
+	if (directions & LEFT)	choices.push_back(LEFT);
+	if (directions & RIGHT)	choices.push_back(RIGHT);
+
+	if (choices.size() == 1) return choices.front();
+	else return choices[rand() % choices.size()];
 }
