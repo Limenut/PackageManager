@@ -2,6 +2,11 @@
 
 using namespace std;
 
+Spritesheet::Spritesheet(const string &_file, int _tileRes, Window *window)
+{
+	makeSheet(_file, _tileRes, window);
+}
+
 Spritesheet::~Spritesheet()
 {
 	for (auto &i : frames)
@@ -14,8 +19,6 @@ Spritesheet::~Spritesheet()
 void Spritesheet::makeSheet(const string &_file, int _tileRes, Window *window)
 {
 	tileRes = _tileRes;
-	currentFrame = 0;
-	forward = true;
 	frames.clear();
 
 	cout << "Loading " << _file.c_str() << "... ";
@@ -57,31 +60,14 @@ void Spritesheet::makeSheet(const string &_file, int _tileRes, Window *window)
 	cout << "Ok" << endl;
 }
 
-SDL_Texture* Spritesheet::nextFrameLoop()
-{
-	SDL_Texture* tex = frames[currentFrame];
-
-	currentFrame++;
-
-	if (currentFrame == frames.size()) currentFrame = 0;
-
-	return tex;
-}
-
-SDL_Texture* Spritesheet::nextFramePong()
-{
-	if (currentFrame == 0) forward = true;
-	if (currentFrame == frames.size() - 1)  forward = false;
-
-	if (forward) currentFrame++;
-	else currentFrame--;
-
-	SDL_Texture* tex = frames[currentFrame];
-	return tex;
-}
-
-SDL_Texture* Spritesheet::rotateFrameCW()
+SDL_Texture* Spritesheet::rotateFrameCW(unsigned index, Window *window)
 {
 	SDL_Surface* target = SDL_CreateRGBSurface(0, tileRes, tileRes, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
+
+	Uint8 *srcPixels;
+
+
+	SDL_Texture* source = frames[index];
+
 	return nullptr;
 }

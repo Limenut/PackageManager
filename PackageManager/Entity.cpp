@@ -10,6 +10,8 @@ Entity::Entity()
 	nextDirection = NONE;
 	speed = 0;
 	counter = 0;
+	currentFrame = 0;
+	animForward = true;
 }
 
 Entity::Entity(Spritesheet *_sprites, unsigned _frameDelay)
@@ -21,6 +23,8 @@ Entity::Entity(Spritesheet *_sprites, unsigned _frameDelay)
 	direction = NONE;
 	speed = 0;
 	counter = _frameDelay;
+	currentFrame = 0;
+	animForward = true;
 }
 
 Entity::~Entity()
@@ -53,7 +57,7 @@ void Entity::render(Window *window)
 	rc.y = y;
 	rc.h = rc.w = sprites->tileRes;
 
-	SDL_RenderCopy(window->ren, sprites->frames[sprites->currentFrame], NULL, &rc);
+	SDL_RenderCopy(window->ren, sprites->frames[currentFrame], NULL, &rc);
 }
 
 void Entity::renderRotated(Window *window)
@@ -73,7 +77,7 @@ void Entity::renderRotated(Window *window)
 	default: angle = 0; break;
 	}
 
-	SDL_RenderCopyEx(window->ren, sprites->frames[sprites->currentFrame], NULL, &rc, angle, NULL, SDL_FLIP_NONE);
+	SDL_RenderCopyEx(window->ren, sprites->frames[currentFrame], NULL, &rc, angle, NULL, SDL_FLIP_NONE);
 }
 
 void Entity::animateLoop()
@@ -82,7 +86,9 @@ void Entity::animateLoop()
 	else
 	{
 		counter = frameDelay;
-		sprites->nextFrameLoop();
+
+		currentFrame++;
+		if (currentFrame == sprites->frames.size()) currentFrame = 0;
 	}
 }
 
@@ -92,7 +98,12 @@ void Entity::animatePong()
 	else
 	{
 		counter = frameDelay;
-		sprites->nextFramePong();
+
+		if (currentFrame == 0) animForward = true;
+		if (currentFrame == sprites->frames.size() - 1)  animForward = false;
+
+		if (animForward) currentFrame++;
+		else currentFrame--;
 	}
 }
 

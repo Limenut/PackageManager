@@ -8,15 +8,12 @@
 class Spritesheet
 {
 public:
+	Spritesheet(const string &_file, int _tileRes, Window *window);
 	~Spritesheet();
 	void makeSheet(const string &_file, int _tileRes, Window *window);	//load image and chop it into tiles of requested size
-	SDL_Texture* nextFrameLoop();
-	SDL_Texture* nextFramePong();
-	SDL_Texture* rotateFrameCW();
+	SDL_Texture* rotateFrameCW(unsigned index, Window *window);
 
 	vector<SDL_Texture*> frames;	//individual tiles/frames
 	int tileRes;
-	int currentFrame;
-	bool forward;
 };
 

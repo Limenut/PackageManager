@@ -42,6 +42,8 @@ public:
 	int speed;
 	unsigned frameDelay;	//frameDelay + 1 == for how many frames a single animation frame lasts for
 	unsigned counter;		//used for animation
+	unsigned currentFrame;
+	bool animForward;
 };
 
 class Ghost : public Entity

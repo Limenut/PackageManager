@@ -18,8 +18,7 @@ using namespace std::chrono;
 
 const int SCREEN_WIDTH = 896;
 const int SCREEN_HEIGHT = 960;
-const int FPS = 120;
-const microseconds frameTime = microseconds(8333);
+const microseconds frameTime = duration_cast<microseconds>(duration<long, ratio<1, 120>>{1});
 
 Window mainWindow;
 Entity pacman;
@@ -411,19 +410,12 @@ int main()
 
 	unsigned dotsEaten = 0;
 
-	Spritesheet pacSprite;
-	Spritesheet redSprite;
-	Spritesheet cyanSprite;
-	Spritesheet pinkSprite;
-	Spritesheet orangeSprite;
-	pacSprite.makeSheet("Pac8frame.png", 32, &mainWindow);
-	redSprite.makeSheet("ghost8red_eyes.png", 32, &mainWindow);
-	cyanSprite.makeSheet("ghost8cya_eyes.png", 32, &mainWindow);
-	pinkSprite.makeSheet("ghost8pin_eyes.png", 32, &mainWindow);
-	orangeSprite.makeSheet("ghost8ora_eyes.png", 32, &mainWindow);
-
-	Spritesheet levelSprites;
-	levelSprites.makeSheet("pacTiles.png", 32, &mainWindow);
+	Spritesheet pacSprite("Pac8frame.png", 32, &mainWindow);
+	Spritesheet redSprite("ghost8red_eyes.png", 32, &mainWindow);
+	Spritesheet cyanSprite("ghost8cya_eyes.png", 32, &mainWindow);
+	Spritesheet pinkSprite("ghost8pin_eyes.png", 32, &mainWindow);
+	Spritesheet orangeSprite("ghost8ora_eyes.png", 32, &mainWindow);
+	Spritesheet levelSprites("pacTiles.png", 32, &mainWindow);
 
 	gameMap.sprites = &levelSprites;
 	gameMap.loadFile("pacMap.map");
@@ -434,7 +426,7 @@ int main()
 	pacman.frameDelay = 1;
 	pacman.speed = 2;
 	pacman.direction = RIGHT;
-	pacman.move(32, 32);
+	pacman.move(432, 512);
 
 	map<string, Ghost> ghosts;
 
@@ -541,7 +533,6 @@ int main()
 		}
 
 		targetTime += frameTime;
-		//targetTime += duration_cast<ratio<1, FPS>>;
 		std::this_thread::sleep_until(targetTime);
 	}
 
