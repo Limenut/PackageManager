@@ -8,7 +8,7 @@
 #include "Tilemap.h"
 #include "Entity.h"
 
-#pragma comment (lib, "SDL2_image.lib")
+
 
 #ifdef main
 #undef main
@@ -447,6 +447,8 @@ int main()
 	}
 	ghosts["red"].activate();
 	ghosts["pink"].activate();
+
+	//SDL_SetRenderDrawBlendMode(mainWindow.ren, SDL_BLENDMODE_BLEND);
 
 	system_clock::time_point targetTime = system_clock::now();
 	while (!quit)

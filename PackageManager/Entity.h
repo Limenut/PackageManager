@@ -18,6 +18,7 @@ enum Chasemode
 	SCATTER,
 	AFRAID,
 	HOME,
+	DEAD
 };
 
 class Entity

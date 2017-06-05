@@ -37,7 +37,9 @@ void Spritesheet::makeSheet(const string &_file, int _tileRes, Window *window)
 	fullRect.h = fullSurf->h;
 
 	SDL_Texture *tex;
-	SDL_Surface *surf = SDL_CreateRGBSurface(0, tileRes, tileRes, 24, 0, 0, 0, 0);
+	SDL_Surface *surf = SDL_CreateRGBSurface(0, tileRes, tileRes, 24, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
+	//SDL_SetSurfaceBlendMode(fullSurf, SDL_BLENDMODE_BLEND);
+	//SDL_SetSurfaceBlendMode(surf, SDL_BLENDMODE_BLEND);
 	SDL_Rect recto;
 	recto.w = recto.h = tileRes;
 	recto.x = recto.y = 0;
@@ -49,6 +51,9 @@ void Spritesheet::makeSheet(const string &_file, int _tileRes, Window *window)
 		{
 			SDL_BlitSurface(fullSurf, &recto, surf, NULL);
 			tex = SDL_CreateTextureFromSurface(window->ren, surf);
+
+			//SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
+
 			frames.push_back(tex);
 		}
 	}

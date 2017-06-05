@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SDL2/SDL_image.h>
+#pragma comment (lib, "SDL2_image.lib")
 #include <vector>
 #include "Window.h"
 
