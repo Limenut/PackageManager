@@ -135,8 +135,8 @@ void Entity::updateTile()
 
 bool Entity::checkAlignment()
 {
-	if (x % sprites->tileRes + y % sprites->tileRes == 0) return true;
-	else return false;
+	if (x % sprites->tileRes + y % sprites->tileRes == 0) { return isAligned = true;}
+	else { return isAligned = false;}
 	//else return chaotic evil
 }
 
@@ -152,6 +152,13 @@ void Ghost::setTarget(Entity target)
 {
 	targetX = target.x;
 	targetY = target.y;
+	mode = CHASE;
+}
+
+void Ghost::setTarget(int x, int y)
+{
+	targetX = x;
+	targetY = y;
 	mode = CHASE;
 }
 
@@ -171,6 +178,11 @@ void Ghost::navigate(Direction directions)
 		directions = (Direction)(directions & ~opposite);
 
 		if (directions == NONE) directions = opposite;
+		else if (letsReverse)
+		{
+			directions = opposite;
+			letsReverse = false;
+		}
 	}
 
 	switch (directions)
@@ -181,6 +193,8 @@ void Ghost::navigate(Direction directions)
 	case RIGHT:	direction = RIGHT;	return;
 	default: break;
 	}
+
+	
 
 	switch (mode)
 	{

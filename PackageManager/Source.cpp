@@ -24,9 +24,6 @@ Window mainWindow;
 Entity pacman;
 Tilemap gameMap;
 
-int blinkyX = 0;
-int blinkyY = 0;
-
 bool quit;
 
 bool init()
@@ -321,7 +318,25 @@ Direction predictChase(const Ghost& chaser, const Entity& target, Direction dire
 	return simpleChase2(chaser, dummy, directions);
 }
 
-Direction weirdChase(const Ghost& chaser, const Entity& target, Direction directions)
+Entity pinkTarget(const Entity& target)
+{
+	Entity dummy;
+	dummy.x = target.x;
+	dummy.y = target.y;
+
+	switch (target.direction)
+	{
+	case UP:	dummy.y -= 4 * 32; break;
+	case DOWN:	dummy.y += 4 * 32; break;
+	case LEFT:	dummy.x -= 4 * 32; break;
+	case RIGHT:	dummy.x += 4 * 32; break;
+	default:					   break;
+	}
+
+	return dummy;
+}
+
+Entity cyanTarget(const Entity& target, const Entity& blinky)
 {
 	Entity dummy;
 	dummy.x = target.x;
@@ -336,14 +351,13 @@ Direction weirdChase(const Ghost& chaser, const Entity& target, Direction direct
 	default:					   break;
 	}
 
-	//global -.-
-	int deltaX = target.x - blinkyX;
-	int deltaY = target.y - blinkyY;
+	int deltaX = target.x - blinky.x;
+	int deltaY = target.y - blinky.y;
 
-	dummy.x -= deltaX;
-	dummy.y -= deltaY;
+	dummy.x += deltaX;
+	dummy.y += deltaY;
 
-	return simpleChase2(chaser, dummy, directions);
+	return dummy;
 }
 
 void navigate(Ghost& chaser, const Entity& target, Tilemap& map, Direction(*algorithm)(const Ghost&, const Entity&, Direction))
@@ -377,6 +391,32 @@ void navigate(Ghost& chaser, const Entity& target, Tilemap& map, Direction(*algo
 	}
 }
 
+void switchGhostMode(bool scattering, map<string, Ghost> ghosts)
+{
+	if (scattering)
+	{
+		scattering = false;
+		for (auto &g : ghosts)
+		{
+			if (g.second.mode == SCATTER) { g.second.mode = CHASE; g.second.forceReverse(); }
+		}
+	}
+	else
+	{
+		scattering = true;
+		for (auto &g : ghosts)
+		{
+			if (g.second.mode == CHASE) { g.second.mode = SCATTER; g.second.forceReverse(); }
+		}
+	}	
+}
+
+bool checkCollision(const Entity& a, const Entity& b)
+{
+	if (a.tileX == b.tileX && a.tileY == b.tileY) return true;
+	else return false;
+}
+
 int main()
 {
 
@@ -396,10 +436,13 @@ int main()
 	unsigned dotsEaten = 0;
 
 	Spritesheet pacSprite("Pac8frame.png", 32, &mainWindow);
+	Spritesheet pacDyingSprite("Pac8dead.png", 32, &mainWindow);
 	Spritesheet redSprite("ghost8red_eyes.png", 32, &mainWindow);
 	Spritesheet cyanSprite("ghost8cya_eyes.png", 32, &mainWindow);
 	Spritesheet pinkSprite("ghost8pin_eyes.png", 32, &mainWindow);
 	Spritesheet orangeSprite("ghost8ora_eyes.png", 32, &mainWindow);
+	Spritesheet afraidSprite("ghost8edible2.png", 32, &mainWindow);
+	Spritesheet deadSprite("ghost_dead.png", 32, &mainWindow);
 	Spritesheet levelSprites("pacTiles.png", 32, &mainWindow);
 
 	gameMap.sprites = &levelSprites;
@@ -418,8 +461,8 @@ int main()
 	ghosts["red"] = Ghost();
 	ghosts["red"].sprites = &redSprite;
 	ghosts["red"].move(384, 416);
-	ghosts["pink"].homeX = 800;
-	ghosts["pink"].homeY = -96;
+	ghosts["red"].homeX = 800;
+	ghosts["red"].homeY = -96;
 
 	ghosts["cyan"] = Ghost();
 	ghosts["cyan"].sprites = &cyanSprite;
@@ -444,17 +487,23 @@ int main()
 		g.second.frameDelay = 7;
 		g.second.speed = 1;
 		g.second.isActive = false;
+		g.second.mode = SCATTER;
 	}
 	ghosts["red"].activate();
 	ghosts["pink"].activate();
 
+	bool scattering = true;
+
 	//SDL_SetRenderDrawBlendMode(mainWindow.ren, SDL_BLENDMODE_BLEND);
 
 	system_clock::time_point targetTime = system_clock::now();
+	unsigned frameCounter = 0;
+	unsigned afraidTimer = 0;
 	while (!quit)
 	{
 
 		handleEvents();
+		//PACMAN
 		if (pacman.checkAlignment())
 		{
 			pacman.updateTile();
@@ -463,67 +512,132 @@ int main()
 				pacman.updateDirection();
 			}
 			char tile = gameMap.getTile(pacman.tileX, pacman.tileY);
-			if (tile == 1 || tile == 2)	//eat
+			if (tile == 1 || tile == 2)	//eat pill
 			{
 				gameMap.changeTile(pacman.tileX, pacman.tileY, 0, &mainWindow);
 				gameMap.update(&mainWindow);
 				dotsEaten++;
 				if (!ghosts["cyan"].isActive && dotsEaten >= 30) ghosts["cyan"].activate();
 				else if (!ghosts["orange"].isActive && dotsEaten >= 60) ghosts["orange"].activate();
+
+				if (tile == 2)
+				{
+					for (auto &g : ghosts)
+					{
+						g.second.mode = AFRAID;
+						g.second.sprites = &afraidSprite;
+						g.second.forceReverse();
+						afraidTimer = 8 * 120;
+					}
+				}
 			}
 		}
 		
+		//GHOSTS
 		if (ghosts["red"].isActive && ghosts["red"].checkAlignment())
 		{
 			ghosts["red"].updateTile();
-			navigate(ghosts["red"], pacman, gameMap, simpleChase2);
+			ghosts["red"].setTarget(pacman);
+			ghosts["red"].navigate(scanDirections(ghosts["red"], gameMap));
 		}
+
 		if (ghosts["cyan"].isActive && ghosts["cyan"].checkAlignment())
 		{
 			ghosts["cyan"].updateTile();
-
-			blinkyX = ghosts["red"].x;
-			blinkyY = ghosts["red"].y;
-
-			navigate(ghosts["cyan"], pacman, gameMap, weirdChase);
+			ghosts["cyan"].setTarget(cyanTarget(pacman, ghosts["red"]));
+			ghosts["cyan"].navigate(scanDirections(ghosts["cyan"], gameMap));
 		}
+
 		if (ghosts["pink"].isActive && ghosts["pink"].checkAlignment())
 		{
 			ghosts["pink"].updateTile();
-			navigate(ghosts["pink"], pacman, gameMap, predictChase);
+			ghosts["pink"].setTarget(pinkTarget(pacman));
+			ghosts["pink"].navigate(scanDirections(ghosts["pink"], gameMap));
 		}
+
 		if (ghosts["orange"].isActive && ghosts["orange"].checkAlignment())
 		{
 			ghosts["orange"].updateTile();	
-			//navigate(ghosts["orange"], pacman, gameMap, simpleChaseRetreat);
 			ghosts["orange"].distance(pacman) > 8 * 32 ?
 				ghosts["orange"].setTarget(pacman) : ghosts["orange"].setScatter();
 
-			ghosts["orange"].navigate(scanDirections(ghosts["orange"], gameMap));
-			
+			ghosts["orange"].navigate(scanDirections(ghosts["orange"], gameMap));		
 		}
 
+		//COLLISION
+		for (auto &g : ghosts)
+		{
+			if (g.second.isAligned || pacman.isAligned)
+			{
+				if (g.second.mode == AFRAID) cout << "the ghost is afraid" << endl;
+				
+				if (checkCollision(g.second, pacman))
+				{
+					if (g.second.mode == AFRAID) cout << "and still is" << endl;
+					else cout << "but not anymore" << endl;
+
+					if (g.second.mode == AFRAID)
+					{
+						
+						g.second.move(432, 512);
+						g.second.mode = DEAD;
+						g.second.sprites = &deadSprite;
+					}
+					else if (g.second.mode == CHASE || g.second.mode == SCATTER)
+					{
+						pacman.move(432, 512);
+					}
+				}
+			}		
+		}
+		
+		//MODE CHANGING
+		if (frameCounter < 84 *120) frameCounter++;
+		if (frameCounter == 7*120 || frameCounter == 27 * 120 || frameCounter == 34 * 120 || frameCounter == 54 * 120 || frameCounter == 59 * 120 || frameCounter == 79 * 120 || frameCounter == 84 * 120)
+		{
+			switchGhostMode(scattering, ghosts);
+		}
+
+		if (afraidTimer > 1) afraidTimer--;
+		else if (afraidTimer == 1)
+		{
+			for (auto &g : ghosts)
+			{
+				if (g.second.mode == AFRAID)
+				{
+					if (scattering) g.second.mode = SCATTER;
+					else g.second.mode = CHASE;
+				}
+			}
+			if (ghosts["red"].mode == AFRAID) ghosts["red"].sprites = &redSprite;
+			if (ghosts["pink"].mode == AFRAID) ghosts["pink"].sprites = &pinkSprite;
+			if (ghosts["cyan"].mode == AFRAID) ghosts["cyan"].sprites = &cyanSprite;
+			if (ghosts["orange"].mode == AFRAID) ghosts["orange"].sprites = &orangeSprite;
+		}
+
+		//RENDERING
 		SDL_SetRenderDrawColor(mainWindow.ren, 0, 0, 0, 255);
 		SDL_RenderFillRect(mainWindow.ren, NULL);
 
 		gameMap.render(&mainWindow);
-		pacman.renderRotated(&mainWindow);	
+		pacman.renderRotated(&mainWindow);
 
 		for (auto &g : ghosts)
 		{
 			g.second.render(&mainWindow);
 			g.second.animateLoop();
-			if (g.second.isActive) g.second.move();		
+			if (g.second.isActive) g.second.move();
 		}
 
 		SDL_RenderPresent(mainWindow.ren);
 
-		if (checkDirection(pacman, gameMap, pacman.direction)) 
-		{ 
-			pacman.move(); 
+		if (checkDirection(pacman, gameMap, pacman.direction))
+		{
+			pacman.move();
 			pacman.animatePong();
 		}
 
+		//TIMING
 		targetTime += frameTime;
 		std::this_thread::sleep_until(targetTime);
 	}

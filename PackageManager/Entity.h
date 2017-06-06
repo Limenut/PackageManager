@@ -55,6 +55,7 @@ public:
 	unsigned counter;		//used for animation
 	unsigned currentFrame;
 	bool animForward;
+	bool isAligned = false;
 };
 
 class Ghost : public Entity
@@ -67,13 +68,18 @@ public:
 	int targetX;
 	int targetY;
 	Chasemode mode;
-	//Direction(*chaseAlgorithm)(Direction);
+	
 
-	inline void activate() { isActive = true; }
-	inline void deActivate() { isActive = false; }
+	inline void activate() { isActive = true;}
+	inline void deActivate() { isActive = false; mode = INACTIVE; }
 	void setTarget(Entity target);
+	void setTarget(int x, int y);
 	void setScatter() { mode = SCATTER; }
 	void navigate(Direction directions);
 	Direction chase(int _x, int _y, Direction directions);
 	Direction flee(Direction directions);
+	void forceReverse() { letsReverse = true; }
+
+private:
+	bool letsReverse = false;
 };
