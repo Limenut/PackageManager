@@ -454,31 +454,31 @@ int main()
 	pacman.frameDelay = 1;
 	pacman.speed = 2;
 	pacman.direction = RIGHT;
-	pacman.move(432, 512);
+	pacman.setStart(432, 512);
 
 	map<string, Ghost> ghosts;
 
 	ghosts["red"] = Ghost();
 	ghosts["red"].sprites = &redSprite;
-	ghosts["red"].move(384, 416);
+	ghosts["red"].setStart(384, 416);
 	ghosts["red"].homeX = 800;
 	ghosts["red"].homeY = -96;
 
 	ghosts["cyan"] = Ghost();
 	ghosts["cyan"].sprites = &cyanSprite;
-	ghosts["cyan"].move(416, 416);
+	ghosts["cyan"].setStart(416, 416);
 	ghosts["cyan"].homeX = 864;
 	ghosts["cyan"].homeY = 1024;
 
 	ghosts["pink"] = Ghost();
 	ghosts["pink"].sprites = &pinkSprite;
-	ghosts["pink"].move(448, 416);
+	ghosts["pink"].setStart(448, 416);
 	ghosts["pink"].homeX = 64;
 	ghosts["pink"].homeY = -96;
 
 	ghosts["orange"] = Ghost();
 	ghosts["orange"].sprites = &orangeSprite;
-	ghosts["orange"].move(480, 416);
+	ghosts["orange"].setStart(480, 416);
 	ghosts["orange"].homeX = 0;
 	ghosts["orange"].homeY = 1024;
 
@@ -569,23 +569,16 @@ int main()
 		{
 			if (g.second.isAligned || pacman.isAligned)
 			{
-				if (g.second.mode == AFRAID) cout << "the ghost is afraid" << endl;
-				
 				if (checkCollision(g.second, pacman))
 				{
-					if (g.second.mode == AFRAID) cout << "and still is" << endl;
-					else cout << "but not anymore" << endl;
-
 					if (g.second.mode == AFRAID)
-					{
-						
-						g.second.move(432, 512);
+					{	
 						g.second.mode = DEAD;
 						g.second.sprites = &deadSprite;
 					}
 					else if (g.second.mode == CHASE || g.second.mode == SCATTER)
 					{
-						pacman.move(432, 512);
+						pacman.resetPos();
 					}
 				}
 			}		
@@ -601,6 +594,10 @@ int main()
 		if (afraidTimer > 1) afraidTimer--;
 		else if (afraidTimer == 1)
 		{
+			if (ghosts["red"].mode == AFRAID) ghosts["red"].sprites = &redSprite;
+			if (ghosts["pink"].mode == AFRAID) ghosts["pink"].sprites = &pinkSprite;
+			if (ghosts["cyan"].mode == AFRAID) ghosts["cyan"].sprites = &cyanSprite;
+			if (ghosts["orange"].mode == AFRAID) ghosts["orange"].sprites = &orangeSprite;
 			for (auto &g : ghosts)
 			{
 				if (g.second.mode == AFRAID)
@@ -608,11 +605,7 @@ int main()
 					if (scattering) g.second.mode = SCATTER;
 					else g.second.mode = CHASE;
 				}
-			}
-			if (ghosts["red"].mode == AFRAID) ghosts["red"].sprites = &redSprite;
-			if (ghosts["pink"].mode == AFRAID) ghosts["pink"].sprites = &pinkSprite;
-			if (ghosts["cyan"].mode == AFRAID) ghosts["cyan"].sprites = &cyanSprite;
-			if (ghosts["orange"].mode == AFRAID) ghosts["orange"].sprites = &orangeSprite;
+			}		
 		}
 
 		//RENDERING

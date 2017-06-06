@@ -148,18 +148,30 @@ int Entity::distance(Entity target)
 	return int(sqrt(deltaX*deltaX + deltaY*deltaY) + 0.5);
 }
 
+void Entity::setStart(int x, int y)
+{
+	startX = x;
+	startY = y;
+	move(x, y);
+}
+
+void Entity::resetPos()
+{
+	move(startX, startY);
+}
+
 void Ghost::setTarget(Entity target)
 {
 	targetX = target.x;
 	targetY = target.y;
-	mode = CHASE;
+	//mode = CHASE;
 }
 
 void Ghost::setTarget(int x, int y)
 {
 	targetX = x;
 	targetY = y;
-	mode = CHASE;
+	//mode = CHASE;
 }
 
 void Ghost::navigate(Direction directions)
@@ -202,7 +214,7 @@ void Ghost::navigate(Direction directions)
 	case CHASE:		direction = chase(targetX, targetY, directions);	break;
 	case SCATTER:	direction = chase(homeX, homeY, directions);		break;
 	case AFRAID:	direction = flee(directions);						break;
-	case HOME:															break;
+	case DEAD:		direction = home();									break;
 	}
 }
 
@@ -247,4 +259,12 @@ Direction Ghost::flee(Direction directions)
 
 	if (choices.size() == 1) return choices.front();
 	else return choices[rand() % choices.size()];
+}
+
+Direction Ghost::home()
+{
+	if (x < startX) return RIGHT;
+	else if (x > startX) return LEFT;
+	else if (y < startY) return DOWN;
+	else return UP;
 }

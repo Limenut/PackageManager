@@ -40,6 +40,8 @@ public:
 	void updateTile();			//update tileX and tileY
 	bool checkAlignment();		//perfect alignment with tile grid
 	int distance(Entity target);
+	void setStart(int x, int y);
+	void resetPos();
 
 	//position in pixels
 	int x;
@@ -47,6 +49,8 @@ public:
 	//position in tiles
 	int tileX;
 	int tileY;
+	int startX;
+	int startY;
 	Spritesheet *sprites;
 	Direction direction;
 	Direction nextDirection;
@@ -78,6 +82,7 @@ public:
 	void navigate(Direction directions);
 	Direction chase(int _x, int _y, Direction directions);
 	Direction flee(Direction directions);
+	Direction home();
 	void forceReverse() { letsReverse = true; }
 
 private:
