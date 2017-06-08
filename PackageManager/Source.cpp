@@ -336,7 +336,7 @@ Entity pinkTarget(const Entity& target)
 	return dummy;
 }
 
-Entity cyanTarget(const Entity& target, const Entity& blinky)
+Entity cyanTarget(const Entity& target, const Ghost& blinky)
 {
 	Entity dummy;
 	dummy.x = target.x;
@@ -358,6 +358,20 @@ Entity cyanTarget(const Entity& target, const Entity& blinky)
 	dummy.y += deltaY;
 
 	return dummy;
+}
+
+Entity orangeTarget(Ghost& ghost, const Entity& target)
+{
+	Entity dummy;
+	if (ghost.distance(target) > 8 * 32)
+	{
+		dummy = target;
+	}
+	else
+	{
+		dummy.x = ghost.homeX;
+		dummy.y = ghost.homeY;
+	}
 }
 
 void navigate(Ghost& chaser, const Entity& target, Tilemap& map, Direction(*algorithm)(const Ghost&, const Entity&, Direction))
@@ -558,9 +572,7 @@ int main()
 		if (ghosts["orange"].isActive && ghosts["orange"].checkAlignment())
 		{
 			ghosts["orange"].updateTile();	
-			ghosts["orange"].distance(pacman) > 8 * 32 ?
-				ghosts["orange"].setTarget(pacman) : ghosts["orange"].setScatter();
-
+			ghosts["orange"].setTarget(orangeTarget(ghosts["orange"], pacman));
 			ghosts["orange"].navigate(scanDirections(ghosts["orange"], gameMap));		
 		}
 
